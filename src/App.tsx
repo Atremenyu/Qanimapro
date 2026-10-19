@@ -40,12 +40,14 @@ import { CommandPaletteModal } from './components/CommandPaletteModal';
 import { WorkspaceLayoutModal } from './components/WorkspaceLayoutModal';
 import { SaveLayoutQuickModal } from './components/SaveLayoutQuickModal';
 import { ReframeModal } from './components/ReframeModal';
+import { McpModal } from './components/McpModal';
 import { FloatingTransportHUD } from './components/FloatingTransportHUD';
 import { TabletFloatingControls } from './components/TabletFloatingControls';
 import { realtimeSync, SyncMessage } from './utils/realtimeSync';
 import { applyFigmaAlignment, FigmaAlignAction } from './utils/figmaTools';
 import { evaluateProp } from './utils/animEngine';
 import { adaptCompositionToDimensions } from './utils/templateAdapter';
+import { TEMPLATE_CATALOG } from './data/richTemplates';
 import {
   ChevronLeft,
   ChevronRight,
@@ -139,6 +141,7 @@ export default function App() {
   const [isInteractiveTourOpen, setIsInteractiveTourOpen] = useState<boolean>(false);
   const [isRealtimeModalOpen, setIsRealtimeModalOpen] = useState<boolean>(false);
   const [isReframeModalOpen, setIsReframeModalOpen] = useState<boolean>(false);
+  const [isMcpModalOpen, setIsMcpModalOpen] = useState<boolean>(false);
 
   // Responsive Screen Size & Tablet Mode Tracking
   const [windowWidth, setWindowWidth] = useState<number>(() =>
@@ -915,8 +918,17 @@ export default function App() {
     };
   }, [isPlaying, composition.duration]);
 
-  // Real-time synchronization receiver (BroadcastChannel / WebSockets)
+  // Real-time synchronization receiver (BroadcastChannel / WebSockets / MCP Bridge)
   useEffect(() => {
+    // Auto-connect to local MCP Bridge if running in browser
+    if (typeof window !== 'undefined' && !realtimeSync.serverUrl) {
+      try {
+        realtimeSync.connectWebSocket('ws://localhost:49222');
+      } catch {
+        // bridge not running yet, user can start it via npm run mcp
+      }
+    }
+
     const unsubscribe = realtimeSync.subscribe((msg: SyncMessage) => {
       if (msg.type === 'SYNC_COMPOSITION' && msg.payload?.composition) {
         setComposition(msg.payload.composition);
@@ -927,9 +939,52 @@ export default function App() {
             l.id === msg.payload.layerId ? { ...l, ...msg.payload.updated } : l
           ),
         }));
-      } else if (msg.type === 'SYNC_PLAYHEAD' && typeof msg.payload?.time === 'number') {
-        setCurrentTime(msg.payload.time);
-        if (typeof msg.payload.isPlaying === 'boolean') {
+      } else if (msg.type === 'SYNC_LAYER_CREATE' && msg.payload?.layer) {
+        setComposition((prev) => ({
+          ...prev,
+          layers: [...prev.layers, msg.payload.layer],
+        }));
+      } else if (msg.type === 'SYNC_LAYER_DELETE' && msg.payload?.layerId) {
+        setComposition((prev) => ({
+          ...prev,
+          layers: prev.layers.filter((l) => l.id !== msg.payload.layerId),
+        }));
+      } else if (msg.type === 'SYNC_REFRAME' && msg.payload?.width && msg.payload?.height) {
+        setComposition((prev) =>
+          adaptCompositionToDimensions(prev, msg.payload.width, msg.payload.height)
+        );
+      } else if (msg.type === 'SYNC_APPLY_TEMPLATE' && msg.payload?.keyword) {
+        const kw = (msg.payload.keyword || '').toLowerCase();
+        const found = TEMPLATE_CATALOG.find(
+          (t) =>
+            t.id.toLowerCase().includes(kw) ||
+            t.name.toLowerCase().includes(kw) ||
+            t.category.toLowerCase().includes(kw) ||
+            t.description.toLowerCase().includes(kw)
+        );
+        if (found) {
+          setComposition(found.composition);
+          setSelectedLayerIds(found.composition.layers.length > 0 ? [found.composition.layers[0].id] : []);
+          setCurrentTime(0);
+        }
+      } else if (msg.type === 'SET_CANVAS_BACKGROUND' && msg.payload?.color) {
+        setComposition((prev) => ({
+          ...prev,
+          backgroundColor: msg.payload.color,
+        }));
+      } else if (msg.type === 'SYNC_PLAYHEAD') {
+        const action = msg.payload?.action;
+        if (action === 'play') {
+          setIsPlaying(true);
+        } else if (action === 'pause') {
+          setIsPlaying(false);
+        } else if (action === 'toggle') {
+          setIsPlaying((prev) => !prev);
+        }
+        if (typeof msg.payload?.time === 'number') {
+          setCurrentTime(msg.payload.time);
+        }
+        if (typeof msg.payload?.isPlaying === 'boolean') {
           setIsPlaying(msg.payload.isPlaying);
         }
       }
@@ -1199,6 +1254,7 @@ export default function App() {
         onOpenCompSettings={() => setIsCompSettingsOpen(true)}
         onOpenShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onOpenReframeModal={() => setIsReframeModalOpen(true)}
+        onOpenMcpModal={() => setIsMcpModalOpen(true)}
         onApplyFigmaAlign={handleApplyFigmaAlign}
         viewportZoom={viewportState.zoom}
         onSetViewportZoom={(zoom) => setViewportState((prev) => ({ ...prev, zoom }))}
@@ -1701,6 +1757,12 @@ export default function App() {
         onClose={() => setIsReframeModalOpen(false)}
         composition={composition}
         onApplyReframe={handleApplyReframe}
+      />
+
+      {/* Model Context Protocol (MCP) Integration Modal for OpenCode / Claude / Cursor */}
+      <McpModal
+        isOpen={isMcpModalOpen}
+        onClose={() => setIsMcpModalOpen(false)}
       />
 
       {/* Workspace Layouts & Creative Focus Modes Modal */}

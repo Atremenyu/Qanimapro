@@ -1,0 +1,12 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcpServers": {
+    "vectormotion": {
+      "command": "npx",
+      "args": ["-y", "tsx", "mcp-server/index.ts"],
+      "env": {
+        "MCP_BRIDGE_PORT": "49222"
+      }
+    }
+  }
+}

@@ -3,6 +3,11 @@ import { Composition, VectorLayer } from '../types';
 export type SyncMessageType =
   | 'SYNC_COMPOSITION'
   | 'SYNC_LAYER_UPDATE'
+  | 'SYNC_LAYER_CREATE'
+  | 'SYNC_LAYER_DELETE'
+  | 'SYNC_REFRAME'
+  | 'SYNC_APPLY_TEMPLATE'
+  | 'SET_CANVAS_BACKGROUND'
   | 'SYNC_PLAYHEAD'
   | 'SYNC_SELECTION'
   | 'SYNC_PRESENCE'

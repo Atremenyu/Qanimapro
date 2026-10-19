@@ -22,6 +22,7 @@ import {
   Undo2,
   Redo2,
   Move,
+  Bot,
 } from 'lucide-react';
 import { Composition, VectorLayer, EasingType, WorkspaceLayout } from '../types';
 import { MenuBar } from './MenuBar';
@@ -98,6 +99,7 @@ interface TopNavProps {
   onToggleToolbarPosition?: () => void;
   onOpenReframeModal?: () => void;
   onApplyFigmaAlign?: (action: FigmaAlignAction, alignToCanvas?: boolean) => void;
+  onOpenMcpModal?: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -113,6 +115,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenCompSettings,
   onOpenShortcutsModal,
   onOpenReframeModal,
+  onOpenMcpModal,
   onApplyFigmaAlign,
   onUndo,
   onRedo,
@@ -316,6 +319,7 @@ export const TopNav: React.FC<TopNavProps> = ({
           onOpenCompSettings={onOpenCompSettings}
           onOpenShortcutsModal={onOpenShortcutsModal}
           onOpenReframeModal={onOpenReframeModal}
+          onOpenMcpModal={onOpenMcpModal}
           onApplyFigmaAlign={onApplyFigmaAlign}
           onUndo={onUndo}
           onRedo={onRedo}
@@ -577,6 +581,21 @@ export const TopNav: React.FC<TopNavProps> = ({
           <span>Plantillas</span>
         </button>
 
+        {/* MCP AI Server Trigger (Desktop) */}
+        {onOpenMcpModal && (
+          <button
+            onClick={onOpenMcpModal}
+            title="Conexión MCP con OpenCode / Claude Desktop / Cursor"
+            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md transition-all font-semibold cursor-pointer border shrink-0 bg-gradient-to-r from-purple-950/70 to-indigo-950/70 text-purple-200 border-purple-750/70 hover:border-purple-500 hover:text-white hover:shadow-sm"
+          >
+            <Bot className="w-3.5 h-3.5 text-purple-400" />
+            <span>MCP IA</span>
+            <span className="text-[9px] bg-purple-500/25 text-purple-300 px-1 py-0.2 rounded font-mono">
+              OpenCode
+            </span>
+          </button>
+        )}
+
         {/* Guides Quick Trigger (Desktop) */}
         {onOpenLearningGuide && (
           <button
@@ -680,6 +699,21 @@ export const TopNav: React.FC<TopNavProps> = ({
                   <Layers className="w-3.5 h-3.5 text-indigo-400" /> Plantillas de Banners
                 </span>
               </button>
+
+              {onOpenMcpModal && (
+                <button
+                  onClick={() => {
+                    onOpenMcpModal();
+                    setIsToolsMenuOpen(false);
+                  }}
+                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-purple-600 flex items-center justify-between group transition-colors cursor-pointer"
+                >
+                  <span className="flex items-center gap-2 font-medium">
+                    <Bot className="w-3.5 h-3.5 text-purple-400" /> Servidor MCP (OpenCode / IA)
+                  </span>
+                  <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1 py-0.5 rounded font-mono">MCP</span>
+                </button>
+              )}
 
               {onOpenLearningGuide && (
                 <button

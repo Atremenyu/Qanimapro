@@ -43,6 +43,7 @@ import {
   AlignCenter,
   AlignRight,
   LayoutGrid,
+  Bot,
 } from 'lucide-react';
 import { Composition, VectorLayer, EasingType, WorkspaceLayout } from '../types';
 import { GuideSectionId } from './LearningGuideModal';
@@ -50,6 +51,7 @@ import { FigmaAlignAction } from '../utils/figmaTools';
 
 interface MenuBarProps {
   className?: string;
+  onOpenMcpModal?: () => void;
   composition: Composition;
   onUpdateComposition: (updated: Partial<Composition>) => void;
   onNewBlankComposition: () => void;
@@ -119,6 +121,7 @@ interface MenuBarProps {
 
 export const MenuBar: React.FC<MenuBarProps> = ({
   className,
+  onOpenMcpModal,
   composition,
   onUpdateComposition,
   onNewBlankComposition,
@@ -1609,6 +1612,21 @@ export const MenuBar: React.FC<MenuBarProps> = ({
                 <Zap className="w-3.5 h-3.5 text-emerald-400" /> Engine Benchmarks (&lt;4KB)
               </span>
             </button>
+
+            {onOpenMcpModal && (
+              <button
+                onClick={() => {
+                  onOpenMcpModal();
+                  setOpenMenu(null);
+                }}
+                className={`${menuItemClass} text-purple-300 hover:bg-purple-600`}
+              >
+                <span className="flex items-center gap-2">
+                  <Bot className="w-3.5 h-3.5 text-purple-400" /> Servidor MCP (OpenCode / IA)
+                </span>
+                <span className="text-[9px] bg-purple-500/20 text-purple-300 font-mono px-1 py-0.5 rounded">MCP</span>
+              </button>
+            )}
 
             <div className="h-[1px] bg-zinc-800 my-1" />
 
