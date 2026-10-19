@@ -1,0 +1,8 @@
+{
+  "name": "HTMLMotion",
+  "description": "After Effects-style HTML5 vector animation studio optimized for lightweight, ultra-fast web rendering and micro-file size exports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
