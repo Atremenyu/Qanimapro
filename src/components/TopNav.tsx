@@ -231,7 +231,7 @@ export const TopNav: React.FC<TopNavProps> = ({
   };
 
   return (
-    <header className="flex flex-col w-full select-none shrink-0 z-30 bg-zinc-950 border-b border-zinc-800">
+    <header className="relative z-40 flex flex-col w-full select-none shrink-0 bg-zinc-950 border-b border-zinc-800">
       {/* TIER 1: GLOBAL STUDIO MENU STRIP (32px) */}
       <div className="h-8 px-2.5 flex items-center justify-between gap-3 border-b border-zinc-850/80 bg-zinc-950 text-xs">
         {/* Left: Brand + Project Title + MenuBar */}

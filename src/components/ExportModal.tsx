@@ -57,8 +57,8 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const [loopDelay, setLoopDelay] = useState<number>(0);
   const [restartOnHover, setRestartOnHover] = useState<boolean>(true);
 
-  // Responsiveness configuration
-  const [isResponsive, setIsResponsive] = useState<boolean>(true);
+  // Responsiveness configuration (default to exact fixed dimension for web ads / Google Ads)
+  const [isResponsive, setIsResponsive] = useState<boolean>(false);
   const [previewScale, setPreviewScale] = useState<'100%' | '75%' | '50%' | 'mobile'>('100%');
 
   // Image Export Mode: 'files' exports relative paths & images folder in zip; 'base64' embeds data URLs
@@ -355,53 +355,62 @@ export const ExportModal: React.FC<ExportModalProps> = ({
               </div>
 
               {/* Mini Ad Banner Stage Preview Box */}
-              <div
-                style={{ backgroundColor: composition.backgroundColor }}
-                className="w-full h-44 rounded-lg border border-zinc-700/60 overflow-hidden relative shadow-inner flex items-center justify-center p-2 bg-zinc-950/80"
-              >
-                <div
-                  style={{
-                    width: previewScale === 'mobile' ? '320px' : previewScale,
-                    maxWidth: '100%',
-                    height: '100%',
-                    transition: 'width 0.2s ease',
-                  }}
-                  className="flex items-center justify-center w-full h-full"
-                >
-                  <iframe
-                    key={`${loopMode}_${loopCount}_${loopDelay}_${isResponsive}_${previewScale}_${composition.layers.length}_${composition.duration}`}
-                    srcDoc={previewHtmlCode}
-                    title="Google Ads Live Banner Preview"
-                    className="w-full h-full border-0 pointer-events-auto block"
-                  />
-                </div>
-              </div>
+              {(() => {
+                const maxBoxW = 300;
+                const maxBoxH = 190;
+                const aspect = (composition.width || 300) / (composition.height || 250);
+                let stageW = maxBoxW;
+                let stageH = Math.round(maxBoxW / aspect);
+                if (stageH > maxBoxH) {
+                  stageH = maxBoxH;
+                  stageW = Math.round(maxBoxH * aspect);
+                }
+                const previewScaleFactor = stageW / (composition.width || 300);
 
-              {/* --- MODO DE RESPONSIVIDAD Y ESCALADO --- */}
+                return (
+                  <div className="w-full flex flex-col items-center justify-center p-3 rounded-lg border border-zinc-800 bg-zinc-950/90 space-y-2">
+                    <div className="flex items-center justify-between w-full text-[10px] text-zinc-400 font-mono">
+                      <span>Medida: <strong className="text-emerald-400">{composition.width} × {composition.height} px</strong></span>
+                      <span>Escala vista: <strong className="text-zinc-300">{(previewScaleFactor * 100).toFixed(0)}%</strong></span>
+                    </div>
+                    <div
+                      style={{
+                        width: `${stageW}px`,
+                        height: `${stageH}px`,
+                        backgroundColor: composition.backgroundColor,
+                      }}
+                      className="rounded border border-zinc-700/60 overflow-hidden relative shadow-lg shrink-0 flex items-center justify-center"
+                    >
+                      <iframe
+                        key={`${loopMode}_${loopCount}_${loopDelay}_${isResponsive}_${previewScale}_${composition.layers.length}_${composition.duration}`}
+                        srcDoc={previewHtmlCode}
+                        title="Google Ads Live Banner Preview"
+                        style={{
+                          width: `${composition.width}px`,
+                          height: `${composition.height}px`,
+                          transform: `scale(${previewScaleFactor})`,
+                          transformOrigin: '0 0',
+                        }}
+                        className="border-0 pointer-events-auto block absolute top-0 left-0"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* --- MODO DE RESPONSIVIDAD Y MEDIDAS PARA IFRAMES --- */}
               <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-lg space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[11px] font-bold text-zinc-200 flex items-center gap-1.5 font-mono">
                     <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                    Diseño Responsivo (Auto-escala)
+                    Medidas y Comportamiento del Lienzo
                   </span>
                   <span className="text-[10px] font-mono text-emerald-400 font-semibold">
-                    {isResponsive ? 'Fluido / Auto' : 'Fijo IAB'}
+                    {!isResponsive ? `Fijo (${composition.width}×${composition.height}px)` : 'Auto-escala Fluida'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 gap-1.5">
-                  <button
-                    onClick={() => setIsResponsive(true)}
-                    className={`py-1.5 px-2 rounded text-[10px] font-semibold border flex items-center justify-center gap-1.5 transition-all ${
-                      isResponsive
-                        ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300 shadow-sm'
-                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
-                    }`}
-                  >
-                    <Smartphone className="w-3 h-3" />
-                    <span>📱 Responsivo</span>
-                  </button>
-
                   <button
                     onClick={() => setIsResponsive(false)}
                     className={`py-1.5 px-2 rounded text-[10px] font-semibold border flex items-center justify-center gap-1.5 transition-all ${
@@ -411,13 +420,25 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                     }`}
                   >
                     <Maximize2 className="w-3 h-3" />
-                    <span>📐 Fijo ({composition.width}×{composition.height})</span>
+                    <span>📐 Medida Exacta ({composition.width}×{composition.height}px)</span>
+                  </button>
+
+                  <button
+                    onClick={() => setIsResponsive(true)}
+                    className={`py-1.5 px-2 rounded text-[10px] font-semibold border flex items-center justify-center gap-1.5 transition-all ${
+                      isResponsive
+                        ? 'bg-emerald-600/20 border-emerald-500 text-emerald-300 shadow-sm'
+                        : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700'
+                    }`}
+                  >
+                    <Smartphone className="w-3 h-3" />
+                    <span>📱 Adaptable al Iframe</span>
                   </button>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-tight">
-                  {isResponsive
-                    ? '✓ El banner se adapta vectorialmente a cualquier pantalla (móvil, tablet, desktop o iframes fluidos) manteniendo la nitidez y proporción.'
-                    : `✓ Dimensiones fijas exactas a ${composition.width}x${composition.height}px.`}
+                  {!isResponsive
+                    ? `✓ Medida estricta de ${composition.width}×${composition.height}px en body y contenedor. Diseñado especialmente para iframes fijos, Google Ads y banners web IAB.`
+                    : `✓ Medida base ${composition.width}×${composition.height}px con escalado vectorial proporcional automático para iframes fluidos o móviles.`}
                 </p>
               </div>
 

@@ -186,10 +186,10 @@ export const CanvasRulers: React.FC<CanvasRulersProps> = ({
   const canvasSpanYEnd = Math.min(containerRect.height, originY + compositionHeight * zoom);
 
   return (
-    <div className="absolute inset-0 pointer-events-none select-none z-30 overflow-hidden font-mono">
+    <div className="absolute inset-0 pointer-events-none select-none z-10 overflow-hidden font-mono">
       {/* --- TOP-LEFT CORNER JUNCTION BLOCK --- */}
       <div
-        className="absolute top-0 left-0 w-6 h-6 bg-zinc-900 border-r border-b border-zinc-750 flex items-center justify-center cursor-pointer pointer-events-auto hover:bg-zinc-800 transition-colors z-40 text-zinc-400 hover:text-zinc-200"
+        className="absolute top-0 left-0 w-6 h-6 bg-zinc-900 border-r border-b border-zinc-750 flex items-center justify-center cursor-pointer pointer-events-auto hover:bg-zinc-800 transition-colors z-20 text-zinc-400 hover:text-zinc-200"
         title="Opciones de Reglas y Guías (Clic para menú)"
         onClick={() => setIsCornerMenuOpen((prev) => !prev)}
       >
@@ -200,7 +200,7 @@ export const CanvasRulers: React.FC<CanvasRulersProps> = ({
       {isCornerMenuOpen && (
         <div
           ref={cornerMenuRef}
-          className="absolute top-7 left-1 z-50 w-56 bg-zinc-900 border border-zinc-750 rounded-md shadow-2xl p-1.5 text-xs text-zinc-200 pointer-events-auto flex flex-col gap-1 backdrop-blur-md"
+          className="absolute top-7 left-1 z-30 w-56 bg-zinc-900 border border-zinc-750 rounded-md shadow-2xl p-1.5 text-xs text-zinc-200 pointer-events-auto flex flex-col gap-1 backdrop-blur-md"
         >
           <div className="px-2 py-1 text-[10px] uppercase font-semibold text-zinc-400 tracking-wider border-b border-zinc-800 flex items-center justify-between">
             <span>Reglas y Guías</span>

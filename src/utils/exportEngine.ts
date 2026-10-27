@@ -230,7 +230,7 @@ export function generateStandaloneHTML5(
   const loopCount = options?.loopCount || 3;
   const loopDelay = options?.loopDelay || 0;
   const restartOnHover = options?.restartOnHover !== false;
-  const isResponsive = options?.isResponsive !== false; // Responsive by default
+  const isResponsive = options?.isResponsive === true;
   const maxLoops = loopMode === 'once' ? 1 : loopMode === 'repeat' ? loopCount : 0;
 
   const initialLayerMarkup = renderInitialLayerMarkup(comp.layers, imageMap, imageMode);
@@ -251,39 +251,50 @@ export function generateStandaloneHTML5(
       margin: 0;
       padding: 0;
     }
-    html, body {
-      width: 100%;
-      height: 100%;
+    html {
+      width: ${comp.width}px;
+      height: ${comp.height}px;
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background-color: transparent;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background-color: ${comp.backgroundColor};
+    }
+    body {
+      width: ${comp.width}px;
+      height: ${comp.height}px;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background-color: ${comp.backgroundColor};
       user-select: none;
       -webkit-user-select: none;
+      -webkit-font-smoothing: antialiased;
+      position: absolute;
+      top: 0;
+      left: 0;
     }
     #ad-container {
-      ${
-        isResponsive
-          ? `position: relative; width: 100%; height: 100%; max-width: ${comp.width}px; max-height: ${comp.height}px; aspect-ratio: ${comp.width} / ${comp.height};`
-          : `position: relative; width: ${comp.width}px; height: ${comp.height}px;`
-      }
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: ${comp.width}px;
+      height: ${comp.height}px;
       background-color: ${comp.backgroundColor};
       overflow: hidden;
       cursor: pointer;
-      box-sizing: border-box;
-      border: 1px solid rgba(0, 0, 0, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      outline: 0;
     }
     svg.ad-stage {
-      width: 100%;
-      height: 100%;
+      width: ${comp.width}px;
+      height: ${comp.height}px;
       display: block;
-      overflow: visible;
+      margin: 0;
+      padding: 0;
+      border: 0;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -711,6 +722,35 @@ ${initialLayerMarkup}
         });
       }
 
+      // Auto-fit if embedded inside an iframe slot with different dimensions
+      function fitStageToIframe() {
+        var baseW = ${comp.width};
+        var baseH = ${comp.height};
+        var winW = window.innerWidth || document.documentElement.clientWidth;
+        var winH = window.innerHeight || document.documentElement.clientHeight;
+
+        ${
+          isResponsive
+            ? `if (winW && winH && (Math.abs(winW - baseW) > 1 || Math.abs(winH - baseH) > 1)) {
+          var scale = Math.min(winW / baseW, winH / baseH);
+          document.documentElement.style.width = '100%';
+          document.documentElement.style.height = '100%';
+          document.body.style.transformOrigin = '0 0';
+          document.body.style.transform = 'scale(' + scale + ')';
+        } else {
+          document.documentElement.style.width = baseW + 'px';
+          document.documentElement.style.height = baseH + 'px';
+          document.body.style.transform = 'none';
+        }`
+            : `document.documentElement.style.width = baseW + 'px';
+        document.documentElement.style.height = baseH + 'px';
+        document.body.style.transform = 'none';`
+        }
+      }
+
+      window.addEventListener('resize', fitStageToIframe);
+      fitStageToIframe();
+
       buildLayers();
       animFrameId = requestAnimationFrame(animLoop);
     })();
@@ -965,31 +1005,33 @@ export function generateIFrameSnippet(
   comp: Composition,
   options?: { fileName?: string; isResponsive?: boolean }
 ): string {
-  const isResponsive = options?.isResponsive !== false;
-  const targetFile = options?.fileName || `${comp.name.toLowerCase().replace(/\s+/g, '-')}.html`;
+  const isResponsive = options?.isResponsive === true;
+  const targetFile = options?.fileName || `${comp.name.toLowerCase().replace(/[^a-z0-9_-]/g, '-').replace(/-+/g, '-') || 'banner'}.html`;
 
   if (isResponsive) {
     return `<!-- ============================================================== -->
-<!-- Responsive HTML5 Banner Embed (Fluid - Scales to any screen)   -->
-<!-- Aspect Ratio: ${comp.width}x${comp.height} | Dur: ${comp.duration}s                               -->
+<!-- Responsive HTML5 Banner Embed (Escala fluida manteniendo ${comp.width}x${comp.height}) -->
+<!-- Medida del lienzo: ${comp.width}x${comp.height}px | Duracion: ${comp.duration}s                        -->
 <!-- ============================================================== -->
 <div style="position:relative;width:100%;max-width:${comp.width}px;aspect-ratio:${comp.width}/${comp.height};margin:0 auto;overflow:hidden;">
   <iframe
     src="${targetFile}"
     title="${comp.name}"
+    width="${comp.width}"
+    height="${comp.height}"
     frameborder="0"
     scrolling="no"
     marginwidth="0"
     marginheight="0"
     allowtransparency="true"
-    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;overflow:hidden;"
+    style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;overflow:hidden;display:block;"
   ></iframe>
 </div>`;
   }
 
   return `<!-- ============================================================== -->
 <!-- Fixed Dimension Google Ads / AdSense iframe Embed Tag          -->
-<!-- Size: ${comp.width}x${comp.height}px | Dur: ${comp.duration}s                          -->
+<!-- Medida exacta: ${comp.width}x${comp.height}px | Duracion: ${comp.duration}s                             -->
 <!-- ============================================================== -->
 <iframe
   src="${targetFile}"

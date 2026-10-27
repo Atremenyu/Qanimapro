@@ -1314,7 +1314,7 @@ export default function App() {
       />
 
       {/* Main Workspace (Toolbar + Canvas Stage + Inspector) */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative z-0">
         {/* Left Toolbar if positioned on left */}
         {toolbarVisible && toolbarPosition === 'left' && (
           <Toolbar
