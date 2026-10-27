@@ -41,21 +41,12 @@ import { WorkspaceLayoutModal } from './components/WorkspaceLayoutModal';
 import { SaveLayoutQuickModal } from './components/SaveLayoutQuickModal';
 import { ReframeModal } from './components/ReframeModal';
 import { McpModal } from './components/McpModal';
-import { FloatingTransportHUD } from './components/FloatingTransportHUD';
-import { TabletFloatingControls } from './components/TabletFloatingControls';
 import { realtimeSync, SyncMessage } from './utils/realtimeSync';
 import { applyFigmaAlignment, FigmaAlignAction } from './utils/figmaTools';
 import { evaluateProp } from './utils/animEngine';
 import { adaptCompositionToDimensions } from './utils/templateAdapter';
 import { TEMPLATE_CATALOG } from './data/richTemplates';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-  Wrench,
-  Sliders,
-  Film,
-} from 'lucide-react';
+import { ChevronUp } from 'lucide-react';
 
 const DEFAULT_BLANK_COMPOSITION: Composition = {
   id: 'comp_' + Math.random().toString(36).substring(2, 9),
@@ -1318,6 +1309,8 @@ export default function App() {
         onToggleToolbarPosition={() =>
           setToolbarPosition(toolbarPosition === 'left' ? 'right' : 'left')
         }
+        activeTool={activeTool}
+        onSelectTool={setActiveTool}
       />
 
       {/* Main Workspace (Toolbar + Canvas Stage + Inspector) */}
@@ -1361,6 +1354,7 @@ export default function App() {
             selectedLayerIds={selectedLayerIds}
             onOpenMotionPresets={() => setIsMotionPresetsOpen(true)}
             onAddKeyframe={handleAddKeyframe}
+            onOpenMcpModal={() => setIsMcpModalOpen(true)}
           />
         )}
 
@@ -1418,120 +1412,18 @@ export default function App() {
             onUpdateCompositionGuides={handleUpdateGuides}
           />
 
-          {/* Tablet & Floating HUD Workspace Controls (Maximize Animation Canvas) */}
-          <TabletFloatingControls
-            activeTool={activeTool}
-            onSelectTool={setActiveTool}
-            toolbarVisible={toolbarVisible}
-            onToggleToolbar={() => setToolbarVisible((prev) => !prev)}
-            inspectorVisible={inspectorVisible}
-            onToggleInspector={() => setInspectorVisible((prev) => !prev)}
-            timelineVisible={timelineVisible}
-            onToggleTimeline={() => setTimelineVisible((prev) => !prev)}
-            viewportState={viewportState}
-            onUpdateViewport={(up) => setViewportState((prev) => ({ ...prev, ...up }))}
-            onResetViewport={handleResetViewport}
-            isTabletView={isTablet}
-          />
-
-          {/* Floating Transport HUD when timeline is hidden */}
+          {/* Clean Dock Bar when Timeline is Hidden */}
           {!timelineVisible && (
-            <FloatingTransportHUD
-              composition={composition}
-              currentTime={currentTime}
-              onSetTime={setCurrentTime}
-              isPlaying={isPlaying}
-              onTogglePlay={() => setIsPlaying(!isPlaying)}
-              onRestoreTimeline={() => setTimelineVisible(true)}
-              onOpenWorkspaceManager={() => setIsWorkspaceManagerOpen(true)}
-            />
-          )}
-
-          {/* Edge Restore Solapas / Tabs for Collapsed Side Panels */}
-          {/* Left Edge Tabs */}
-          {((!toolbarVisible && toolbarPosition === 'left') ||
-            (!inspectorVisible && inspectorPosition === 'left')) && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 items-start pointer-events-auto">
-              {!toolbarVisible && toolbarPosition === 'left' && (
-                <button
-                  id="restore-toolbar-left-tab"
-                  onClick={() => setToolbarVisible(true)}
-                  title="Mostrar Barra de Herramientas (Clic para expandir)"
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-blue-400 border border-zinc-750 border-l-0 rounded-r-md shadow-lg px-2 py-3 flex flex-col items-center gap-1.5 transition-all group cursor-pointer hover:pl-2.5"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400 transition-transform group-hover:translate-x-0.5" />
-                  <Wrench className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400" />
-                  <span className="[writing-mode:vertical-rl] text-[9px] uppercase font-bold tracking-wider text-zinc-400 group-hover:text-zinc-200">
-                    Herramientas
-                  </span>
-                </button>
-              )}
-              {!inspectorVisible && inspectorPosition === 'left' && (
-                <button
-                  id="restore-inspector-left-tab"
-                  onClick={() => setInspectorVisible(true)}
-                  title="Mostrar Inspector de Propiedades (Clic para expandir)"
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-blue-400 border border-zinc-750 border-l-0 rounded-r-md shadow-lg px-2 py-3 flex flex-col items-center gap-1.5 transition-all group cursor-pointer hover:pl-2.5"
-                >
-                  <ChevronRight className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400 transition-transform group-hover:translate-x-0.5" />
-                  <Sliders className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400" />
-                  <span className="[writing-mode:vertical-rl] text-[9px] uppercase font-bold tracking-wider text-zinc-400 group-hover:text-zinc-200">
-                    Propiedades
-                  </span>
-                </button>
-              )}
+            <div className="h-6 bg-zinc-950 border-t border-zinc-800 px-3 flex items-center justify-between text-xs select-none shrink-0 z-20">
+              <button
+                onClick={() => setTimelineVisible(true)}
+                title="Expandir panel de línea de tiempo"
+                className="flex items-center gap-1.5 text-zinc-400 hover:text-blue-400 transition-colors font-medium cursor-pointer"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+                <span>Mostrar Línea de Tiempo</span>
+              </button>
             </div>
-          )}
-
-          {/* Right Edge Tabs */}
-          {((!toolbarVisible && toolbarPosition === 'right') ||
-            (!inspectorVisible && inspectorPosition === 'right')) && (
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 z-40 flex flex-col gap-2 items-end pointer-events-auto">
-              {!toolbarVisible && toolbarPosition === 'right' && (
-                <button
-                  id="restore-toolbar-right-tab"
-                  onClick={() => setToolbarVisible(true)}
-                  title="Mostrar Barra de Herramientas (Clic para expandir)"
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-blue-400 border border-zinc-750 border-r-0 rounded-l-md shadow-lg px-2 py-3 flex flex-col items-center gap-1.5 transition-all group cursor-pointer hover:pr-2.5"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400 transition-transform group-hover:-translate-x-0.5" />
-                  <Wrench className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400" />
-                  <span className="[writing-mode:vertical-rl] text-[9px] uppercase font-bold tracking-wider text-zinc-400 group-hover:text-zinc-200">
-                    Herramientas
-                  </span>
-                </button>
-              )}
-              {!inspectorVisible && inspectorPosition === 'right' && (
-                <button
-                  id="restore-inspector-right-tab"
-                  onClick={() => setInspectorVisible(true)}
-                  title="Mostrar Inspector de Propiedades (Clic para expandir)"
-                  className="bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-blue-400 border border-zinc-750 border-r-0 rounded-l-md shadow-lg px-2 py-3 flex flex-col items-center gap-1.5 transition-all group cursor-pointer hover:pr-2.5"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400 transition-transform group-hover:-translate-x-0.5" />
-                  <Sliders className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400" />
-                  <span className="[writing-mode:vertical-rl] text-[9px] uppercase font-bold tracking-wider text-zinc-400 group-hover:text-zinc-200">
-                    Propiedades
-                  </span>
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Bottom Edge Tab for Collapsed Timeline */}
-          {!timelineVisible && (
-            <button
-              id="restore-timeline-bottom-tab"
-              onClick={() => setTimelineVisible(true)}
-              title="Mostrar Línea de Tiempo (Clic para expandir)"
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 z-40 bg-zinc-900 hover:bg-zinc-850 text-zinc-200 hover:text-blue-400 border border-zinc-750 border-b-0 rounded-t-md shadow-xl px-4 py-1.5 flex items-center gap-2 transition-all group cursor-pointer hover:pb-2"
-            >
-              <ChevronUp className="w-3.5 h-3.5 text-zinc-400 group-hover:text-blue-400 transition-transform group-hover:-translate-y-0.5" />
-              <Film className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-xs font-semibold text-zinc-200 group-hover:text-white">
-                Línea de Tiempo
-              </span>
-            </button>
           )}
         </div>
 
@@ -1574,6 +1466,7 @@ export default function App() {
             selectedLayerIds={selectedLayerIds}
             onOpenMotionPresets={() => setIsMotionPresetsOpen(true)}
             onAddKeyframe={handleAddKeyframe}
+            onOpenMcpModal={() => setIsMcpModalOpen(true)}
           />
         )}
 

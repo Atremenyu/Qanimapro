@@ -8,5 +8,9 @@
         "MCP_BRIDGE_PORT": "49222"
       }
     }
-  }
+  },
+  "skills": [
+    "./skills/huashu-design",
+    "./.opencode/skills/huashu-design"
+  ]
 }

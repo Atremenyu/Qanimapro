@@ -111,3 +111,20 @@ Una vez configurado en OpenCode, puedes hablarle a la IA en español con comando
 | `set_canvas_background` | Modifica el color de fondo del lienzo en tiempo real. |
 | `control_playback` | Controla la reproducción (`play`, `pause`, `toggle`, `seek`). |
 | `export_project_json` | Exporta la composición en JSON compatible con VectorMotion. |
+| `huashu_design_directions` | **Huashu-Design (花叔):** Genera 3 direcciones estéticas divergentes (Minimalista, Cinético, Artesanal) con paletas y tipografías antes de diseñar. |
+| `huashu_design_review` | **Huashu-Design (花叔):** Auditoría experta de diseño, anti-clichés de IA, jerarquía visual y ritmo de animación. |
+
+---
+
+## 🎨 Integración con el Skill Huashu-Design (花叔)
+
+El skill oficial de [huashu-design](https://github.com/alchaincyf/huashu-design) ha sido instalado en:
+* `skills/huashu-design/` (proyecto local)
+* `.claude/skills/huashu-design/` (para Claude Code)
+* `.opencode/skills/huashu-design/` (para OpenCode)
+* `~/.claude/skills/huashu-design/` (global de sistema)
+
+### Instrucciones Huashu para pedirle a tu IA:
+* *"Actúa como Director de Arte con Huashu-Design: antes de tocar el lienzo, genera 3 direcciones creativas para mi marca con `huashu_design_directions` y pregúntame cuál prefiero."*
+* *"Ejecuta `huashu_design_review` sobre mi banner para auditar clichés de IA (fondos warm cream genéricos, falta de jerarquía) y mejorar el diseño."*
+* *"Aplica curvas de animación cinematográfica según las guías de Huashu-Design con entradas escalonadas y resortes elásticos en el botón."*

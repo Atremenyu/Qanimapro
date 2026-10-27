@@ -624,6 +624,35 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           properties: {},
         },
       },
+      {
+        name: 'huashu_design_directions',
+        description:
+          'Metodología Huashu-Design (花叔): Genera 3 direcciones estéticas divergentes (paleta cromática, tipografía, composición, micro-animación) para cualquier encargo antes de diseñar.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            topic: {
+              type: 'string',
+              description: 'Tema, marca o producto del diseño (ej: Restaurante de Sushi, Pastelería Artesanal, Taller Automotriz, Agencia Creativa)',
+            },
+            format: {
+              type: 'string',
+              enum: ['1:1', '9:16', '16:9'],
+              description: 'Relación de aspecto objetivo',
+            },
+          },
+          required: ['topic'],
+        },
+      },
+      {
+        name: 'huashu_design_review',
+        description:
+          'Auditoría y crítica experta Huashu-Design (花叔): Evalúa la composición activa buscando clichés de IA (warm cream repetitivo, fuentes genéricas, poco contraste) y revisa ritmo de animación y jerarquía visual.',
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+      },
     ],
   };
 });
@@ -1090,6 +1119,173 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    case 'huashu_design_directions': {
+      const topic = (args as any).topic || 'Diseño Gráfico';
+      const format = (args as any).format || '1:1';
+
+      const directions = {
+        meta: {
+          framework: 'Huashu-Design (花叔)',
+          rule: 'Siempre 3 direcciones divergentes antes de ejecutar. El usuario o director de arte escoge una.',
+          topic,
+          format,
+        },
+        directions: [
+          {
+            id: 'A',
+            name: 'Dirección 1: Minimalismo Editorial de Alto Contraste (High-End Studio)',
+            vibe: 'Sofisticado, premium, tipografía monumental con espaciado amplio y acento monocromático audaz.',
+            palette: {
+              background: '#090a0f',
+              surface: '#13151f',
+              textPrimary: '#ffffff',
+              textSecondary: '#94a3b8',
+              accent: '#38bdf8',
+            },
+            typography: {
+              headline: { font: 'Inter, system-ui', weight: '900', letterSpacing: 3 },
+              kicker: { font: 'monospace', weight: '700', letterSpacing: 4 },
+              body: { font: 'system-ui', weight: '400', letterSpacing: 0 },
+            },
+            compositionStructure: [
+              'Kicker micro-tipográfico superior con padding generoso',
+              'Titular masivo con máscara de revelación ascendente',
+              'Tarjeta flotante con contorno sutil border-zinc-800',
+              'Botón de llamada a la acción con borde contrastante',
+            ],
+            animationPacing: 'Entrada staggered rápida (0.2s a 0.7s) con curva power2Out y micro-resorte en CTA.',
+          },
+          {
+            id: 'B',
+            name: 'Dirección 2: Cinético Vibrante / Neo-Brutalismo Dinámico (Energetic Pulse)',
+            vibe: 'Enérgico, alto impacto visual, formas geométricas contrastadas, colores saturados que rompen la monotonía.',
+            palette: {
+              background: '#0f0c1b',
+              surface: '#1e1635',
+              textPrimary: '#ffffff',
+              textSecondary: '#cbd5e1',
+              accent: '#f43f5e',
+              secondaryAccent: '#f59e0b',
+            },
+            typography: {
+              headline: { font: 'system-ui', weight: '900', letterSpacing: 1 },
+              kicker: { font: 'system-ui', weight: '800', letterSpacing: 2 },
+            },
+            compositionStructure: [
+              'Badge o píldora giratoria con gradiente o color acento',
+              'Titular en dos líneas con pop_bounce y escalado elástico',
+              'Cards modulares bento con métricas o beneficios destacados',
+              'Botón CTA con animación de pulso continuo (pulse)',
+            ],
+            animationPacing: 'Ritmo acelerado tipo reel publicitario, pop_bounce en 0.15s, vibración sutil.',
+          },
+          {
+            id: 'C',
+            name: 'Dirección 3: Artesanal Cálido / Orgánico Editorial (Warm Crafted Soul)',
+            vibe: 'Cálido, humano, texturas visuales suaves, tonos tierra profundos, tipografía elegante con carácter artesanal.',
+            palette: {
+              background: '#1c1512',
+              surface: '#2a1f1a',
+              textPrimary: '#fef3c7',
+              textSecondary: '#d97706',
+              accent: '#fbbf24',
+            },
+            typography: {
+              headline: { font: 'Georgia, serif', weight: '800', letterSpacing: 1 },
+              kicker: { font: 'system-ui', weight: '600', letterSpacing: 3 },
+            },
+            compositionStructure: [
+              'Contenedor central con esquinas generosamente redondeadas (cornerRadius: 24)',
+              'Titular cálido con entrada suave fade_in',
+              'Detalle de sello de calidad o garantía artesanal con círculo concéntrico',
+              'Footer informativo con servicio y contacto directo',
+            ],
+            animationPacing: 'Transiciones lentas y etéreas (0.4s a 1.2s) con easing suave sin saltos bruscos.',
+          },
+        ],
+        instructionsForAssistant:
+          'Presenta estas 3 opciones al usuario con un resumen conciso y pregúntale: "¿Cuál de las 3 direcciones prefieres para aplicar en el lienzo de VectorMotion?". Una vez elegida, usa create_layer / update_layer / animate_layer.',
+      };
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(directions, null, 2),
+          },
+        ],
+      };
+    }
+
+    case 'huashu_design_review': {
+      const layers = currentComposition.layers;
+      const issues: string[] = [];
+      const strengths: string[] = [];
+
+      // 1. Layer count
+      if (layers.length <= 1) {
+        issues.push('La composición tiene pocas capas. Falta jerarquía visual (kicker, titular, tarjeta y CTA).');
+      } else {
+        strengths.push(`Composición estructurada con ${layers.length} capas.`);
+      }
+
+      // 2. Anti-AI Cliche Check
+      const bg = currentComposition.backgroundColor.toLowerCase();
+      if (bg === '#fbf8f3' || bg === '#fffbf0' || bg === '#f7f4ec') {
+        issues.push('Alerta de cliché de IA: Fondo warm cream por defecto. Considera un fondo más intencional acorde a la temática.');
+      } else {
+        strengths.push(`Color de fondo distintivo (${currentComposition.backgroundColor}).`);
+      }
+
+      // 3. Typography hierarchy check
+      const textLayers = layers.filter((l) => l.type === 'text');
+      if (textLayers.length === 0) {
+        issues.push('No hay capas de texto para comunicar el mensaje principal.');
+      } else if (textLayers.length >= 2) {
+        strengths.push(`Buen balance textual con ${textLayers.length} capas tipográficas.`);
+      }
+
+      // 4. Animation Keyframe check
+      const animatedLayers = layers.filter(
+        (l) =>
+          l.transform.position.isKeyframed ||
+          l.transform.scale.isKeyframed ||
+          l.transform.opacity.isKeyframed ||
+          l.transform.rotation.isKeyframed
+      );
+
+      if (animatedLayers.length === 0) {
+        issues.push('Ninguna capa tiene keyframes animados. Usa animate_layer para dotar de vida a la escena.');
+      } else {
+        strengths.push(`${animatedLayers.length} capas cuentan con animación fluida.`);
+      }
+
+      const score = Math.max(30, Math.min(100, 50 + strengths.length * 15 - issues.length * 12));
+
+      const reviewReport = {
+        framework: 'Huashu-Design Review System (花叔)',
+        designScore: `${score}/100`,
+        verdict: score >= 80 ? 'Aprobado para entrega (Studio Grade)' : 'Requiere pulido de diseño',
+        dimensions: `${currentComposition.width} × ${currentComposition.height} px`,
+        strengths,
+        issues,
+        studioRecommendations: [
+          'Asegura que el titular principal tenga fontWeight "900" y fontSize proporcional (min 50px).',
+          'Aplica easing power2Out o back a las entradas para evitar movimiento lineal acartonado.',
+          'Incluye siempre un botón de llamada a la acción (CTA) con acento contrastante.',
+        ],
+      };
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(reviewReport, null, 2),
+          },
+        ],
+      };
+    }
+
     default:
       throw new Error(`Herramienta desconocida: ${name}`);
   }
@@ -1216,6 +1412,18 @@ server.setRequestHandler(ListPromptsRequestSchema, async () => {
         name: 'adaptar_a_stories',
         description: 'Reorganiza el diseño actual a formato vertical 9:16 (Instagram Reels / Stories / TikTok).',
       },
+      {
+        name: 'huashu_tres_direcciones',
+        description:
+          'Aplica la regla de oro de Huashu-Design (花叔): Genera 3 direcciones creativas completamente distintas para el encargo antes de diseñar en el lienzo.',
+        arguments: [
+          {
+            name: 'tema_o_cliente',
+            description: 'Nombre de la marca, restaurante, producto o campaña',
+            required: true,
+          },
+        ],
+      },
     ],
   };
 });
@@ -1279,6 +1487,21 @@ server.setRequestHandler(GetPromptRequestSchema, async (request) => {
           content: {
             type: 'text',
             text: 'Ejecuta la herramienta reframe_composition con preset "9:16" para adaptar la composición a formato vertical de Stories/Reels, reorganizando y escalando los elementos proporcionalmente.',
+          },
+        },
+      ],
+    };
+  }
+
+  if (name === 'huashu_tres_direcciones') {
+    const tema = args?.tema_o_cliente || 'Marca o Campaña';
+    return {
+      messages: [
+        {
+          role: 'user',
+          content: {
+            type: 'text',
+            text: `Actúa como Director de Arte siguiendo la metodología Huashu-Design (花叔). Para el encargo "${tema}", ejecuta primero la herramienta "huashu_design_directions". Presenta 3 propuestas divergentes (Minimalista Editorial, Cinético Vibrante y Artesanal Cálido) con sus paletas de color y tipografías. Pregúntame cuál prefiero y, al elegirla, créala en el lienzo de VectorMotion con create_layer y anima con animate_layer.`,
           },
         },
       ],

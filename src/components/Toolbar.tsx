@@ -16,10 +16,12 @@ import {
   MousePointerClick,
   Undo2,
   Redo2,
+  Bot,
 } from 'lucide-react';
 import { ToolType, VectorLayer } from '../types';
 
 interface ToolbarProps {
+  onOpenMcpModal?: () => void;
   activeTool: ToolType;
   onSelectTool: (tool: ToolType) => void;
   onAddLayer: (type: VectorLayer['type'], pos?: { x: number; y: number }, options?: any) => void;
@@ -64,6 +66,7 @@ export const Toolbar: React.FC<ToolbarProps> = ({
   onRedo,
   canUndo = false,
   canRedo = false,
+  onOpenMcpModal,
 }) => {
   const [isShapeFlyoutOpen, setIsShapeFlyoutOpen] = useState(false);
   const [isKeyframeFlyoutOpen, setIsKeyframeFlyoutOpen] = useState(false);
@@ -539,9 +542,18 @@ export const Toolbar: React.FC<ToolbarProps> = ({
           </div>
         )}
 
-        {/* 5. UNDO & REDO QUICK ACTION BUTTONS */}
-        {(onUndo || onRedo) && (
+        {/* 5. UNDO & REDO & MCP ACTION BUTTONS */}
+        {(onUndo || onRedo || onOpenMcpModal) && (
           <div className="flex flex-col items-center gap-1 w-full pt-1 border-t border-zinc-800/80 mt-1">
+            {onOpenMcpModal && (
+              <button
+                onClick={onOpenMcpModal}
+                title="Servidor MCP (IA / OpenCode)"
+                className="w-8 h-8 rounded-md flex items-center justify-center transition-all cursor-pointer text-purple-400 hover:text-white hover:bg-purple-900/60"
+              >
+                <Bot className="w-3.5 h-3.5" />
+              </button>
+            )}
             {onUndo && (
               <button
                 onClick={onUndo}

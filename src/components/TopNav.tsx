@@ -1,30 +1,43 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Film,
-  SlidersHorizontal,
   Edit2,
   FileCode2,
-  BookOpen,
-  Layers,
   FileImage,
   Radio,
-  CheckCircle2,
-  Search,
-  DownloadCloud,
+  Download,
   Layout,
-  ChevronDown,
-  Save,
-  Check,
-  RotateCw,
   Columns,
   Rows,
-  Plus,
+  RotateCw,
+  Move,
+  MousePointer,
+  Hand,
+  Square,
+  Circle,
+  Star,
+  Hexagon,
+  Type,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  Maximize2,
+  Grid,
+  Magnet,
+  Camera,
+  Play,
+  Pause,
+  RotateCcw,
+  Bot,
+  Layers,
+  ChevronDown,
+  Check,
   Undo2,
   Redo2,
-  Move,
-  Bot,
+  Sliders,
+  Sparkles,
 } from 'lucide-react';
-import { Composition, VectorLayer, EasingType, WorkspaceLayout } from '../types';
+import { Composition, VectorLayer, EasingType, WorkspaceLayout, ToolType } from '../types';
 import { MenuBar } from './MenuBar';
 import { realtimeSync, ConnectionStatus } from '../utils/realtimeSync';
 import { FigmaAlignAction } from '../utils/figmaTools';
@@ -100,6 +113,8 @@ interface TopNavProps {
   onOpenReframeModal?: () => void;
   onApplyFigmaAlign?: (action: FigmaAlignAction, alignToCanvas?: boolean) => void;
   onOpenMcpModal?: () => void;
+  activeTool?: ToolType;
+  onSelectTool?: (tool: ToolType) => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -130,21 +145,22 @@ export const TopNav: React.FC<TopNavProps> = ({
   onApplyTransformAction,
   onApplyEffect,
   onApplyEasingToSelected,
-  isPlaying,
+  isPlaying = false,
   onTogglePlay,
   onResetTime,
-  viewportZoom,
+  currentTime = 0,
+  viewportZoom = 1,
   onSetViewportZoom,
   onResetViewport,
-  showGrid,
+  showGrid = true,
   onToggleGrid,
   showRulers = true,
   onToggleRulers,
-  snapToGrid,
+  snapToGrid = false,
   onToggleSnap,
-  showSafeAreas,
+  showSafeAreas = false,
   onToggleSafeAreas,
-  onionSkin,
+  onionSkin = false,
   onToggleOnionSkin,
   autoKeyframe = true,
   onToggleAutoKeyframe,
@@ -172,611 +188,426 @@ export const TopNav: React.FC<TopNavProps> = ({
   onToggleInspectorPosition,
   toolbarPosition = 'left',
   onToggleToolbarPosition,
+  activeTool = 'select',
+  onSelectTool,
 }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(composition.name);
   const [syncStatus, setSyncStatus] = useState<ConnectionStatus>(realtimeSync.status);
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
-  const [isWorkspaceMenuOpen, setIsWorkspaceMenuOpen] = useState(false);
-  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
-  const workspaceDropdownRef = useRef<HTMLDivElement>(null);
-  const toolsDropdownRef = useRef<HTMLDivElement>(null);
+  const [isZoomDropdownOpen, setIsZoomDropdownOpen] = useState(false);
+  const zoomDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return realtimeSync.onStatusChange((s) => setSyncStatus(s));
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (workspaceDropdownRef.current && !workspaceDropdownRef.current.contains(e.target as Node)) {
-        setIsWorkspaceMenuOpen(false);
-      }
-      if (toolsDropdownRef.current && !toolsDropdownRef.current.contains(e.target as Node)) {
-        setIsToolsMenuOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    setNameInput(composition.name);
+  }, [composition.name]);
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (zoomDropdownRef.current && !zoomDropdownRef.current.contains(e.target as Node)) {
+        setIsZoomDropdownOpen(false);
+      }
     };
-
-    const handleAppInstalled = () => {
-      setIsInstalled(true);
-      setDeferredPrompt(null);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
-    };
+    window.addEventListener('mousedown', handleClickOutside);
+    return () => window.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleInstallPwa = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const choiceResult = await deferredPrompt.userChoice;
-    if (choiceResult.outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
-
-  const handleNameSubmit = () => {
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
     if (nameInput.trim()) {
       onUpdateComposition({ name: nameInput.trim() });
     }
     setIsEditingName(false);
   };
 
-  const currentLayoutName = activeWorkspaceLayout?.name || 'Estudio Completo';
+  const formatTimecode = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    const frames = Math.floor((seconds % 1) * composition.fps);
+    return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+  };
 
   return (
-    <header className="h-10 px-3 bg-zinc-950 border-b border-zinc-850 flex items-center justify-between select-none z-30 shrink-0">
-      {/* LEFT: LOGO ICON ONLY + EDITABLE FILE NAME + SAVED STATE */}
-      <div className="flex items-center gap-2.5 min-w-0">
-        {/* Brand Logo (Icon Only) */}
-        <div
-          title="VectorMotion Studio"
-          className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shadow-xs shrink-0 cursor-default"
-        >
-          <Film className="w-3 h-3 text-white" />
-        </div>
+    <header className="flex flex-col w-full select-none shrink-0 z-30 bg-zinc-950 border-b border-zinc-800">
+      {/* TIER 1: GLOBAL STUDIO MENU STRIP (32px) */}
+      <div className="h-8 px-2.5 flex items-center justify-between gap-3 border-b border-zinc-850/80 bg-zinc-950 text-xs">
+        {/* Left: Brand + Project Title + MenuBar */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 shrink-0 pr-1">
+            <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center shadow-xs">
+              <Film className="w-3 h-3 text-white" />
+            </div>
+            <span className="font-bold text-zinc-100 tracking-tight hidden sm:inline">
+              VectorMotion
+            </span>
+          </div>
 
-        <div className="w-[1px] h-3.5 bg-zinc-800 shrink-0" />
+          <div className="w-[1px] h-3.5 bg-zinc-800 shrink-0" />
 
-        {/* Project Name (Editable) */}
-        <div className="flex items-center gap-1.5 shrink-0">
+          {/* Inline Project Rename */}
           {isEditingName ? (
-            <input
-              type="text"
-              value={nameInput}
-              onChange={(e) => setNameInput(e.target.value)}
-              onBlur={handleNameSubmit}
-              onKeyDown={(e) => e.key === 'Enter' && handleNameSubmit()}
-              autoFocus
-              className="bg-zinc-900 text-zinc-100 text-xs px-2 py-0.5 rounded border border-blue-500 outline-none font-medium max-w-[150px]"
-            />
+            <form onSubmit={handleNameSubmit} className="flex items-center">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                onBlur={handleNameSubmit}
+                autoFocus
+                className="bg-zinc-900 border border-blue-500 text-zinc-100 px-1.5 py-0.5 rounded text-xs focus:outline-none w-32 font-medium"
+              />
+            </form>
           ) : (
             <button
               onClick={() => {
                 setNameInput(composition.name);
                 setIsEditingName(true);
               }}
-              title="Haz clic para renombrar el proyecto"
-              className="group flex items-center gap-1 text-xs font-semibold text-zinc-200 hover:text-white px-1.5 py-0.5 rounded hover:bg-zinc-850 transition-colors max-w-[160px] truncate cursor-pointer"
+              title="Clic para renombrar proyecto"
+              className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-200 px-1 py-0.5 rounded hover:bg-zinc-850 transition-colors max-w-[140px] truncate cursor-pointer font-medium"
             >
               <span className="truncate">{composition.name}</span>
-              <Edit2 className="w-2.5 h-2.5 opacity-0 group-hover:opacity-70 text-zinc-400" />
+              <Edit2 className="w-2.5 h-2.5 text-zinc-500 hover:text-zinc-300" />
             </button>
           )}
 
-          {/* Saved Status Indicator */}
-          <div
-            className="flex items-center gap-1 text-[10px] text-zinc-500 font-mono select-none pl-1"
-            title="Cambios guardados localmente de forma automática"
-          >
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-            <span className="hidden md:inline">Guardado</span>
-          </div>
+          <div className="w-[1px] h-3.5 bg-zinc-800 shrink-0 hidden md:block" />
 
-          {/* Quick Reframe Dimensions Pill */}
-          {onOpenReframeModal && (
-            <button
-              type="button"
-              onClick={onOpenReframeModal}
-              title={`Reframe inteligente: ${composition.width} × ${composition.height}px (Clic para adaptar a Story, Post, YouTube, etc.)`}
-              className="hidden sm:flex items-center gap-1 text-[10px] font-mono font-bold text-emerald-300 hover:text-emerald-200 bg-emerald-950/40 hover:bg-emerald-900/50 border border-emerald-800/50 px-2 py-0.5 rounded-md transition-colors cursor-pointer shadow-xs ml-1"
-            >
-              <Move className="w-2.5 h-2.5 text-emerald-400" />
-              <span>{composition.width}×{composition.height}</span>
-              <span className="text-[9px] text-emerald-400 opacity-80">Reframe</span>
-            </button>
-          )}
+          {/* Studio Standard Menus (8 standard categories) */}
+          <MenuBar
+            className="hidden md:flex items-center gap-0.5 select-none relative z-40 text-xs"
+            composition={composition}
+            onUpdateComposition={onUpdateComposition}
+            onNewBlankComposition={onNewBlankComposition}
+            onOpenProjectJson={onOpenProjectJson}
+            onSaveProjectJson={onSaveProjectJson}
+            onImportSvg={onImportSvg}
+            onOpenPsdModal={onOpenPsdModal}
+            onOpenExportModal={onOpenExportModal}
+            onOpenPresetModal={onOpenPresetModal}
+            onOpenCompSettings={onOpenCompSettings}
+            onOpenShortcutsModal={onOpenShortcutsModal}
+            onOpenReframeModal={onOpenReframeModal}
+            onOpenMcpModal={onOpenMcpModal}
+            onApplyFigmaAlign={onApplyFigmaAlign}
+            onUndo={onUndo}
+            onRedo={onRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            selectedLayerIds={selectedLayerIds}
+            onSelectLayer={onSelectLayer}
+            onAddLayer={onAddLayer}
+            onDuplicateLayer={onDuplicateLayer}
+            onDeleteLayer={onDeleteLayer}
+            onReorderLayer={onReorderLayer}
+            onApplyTransformAction={onApplyTransformAction}
+            onApplyEffect={onApplyEffect}
+            onApplyEasingToSelected={onApplyEasingToSelected}
+            isPlaying={isPlaying}
+            onTogglePlay={onTogglePlay}
+            onResetTime={onResetTime}
+            viewportZoom={viewportZoom}
+            onSetViewportZoom={onSetViewportZoom}
+            onResetViewport={onResetViewport}
+            showGrid={showGrid}
+            onToggleGrid={onToggleGrid}
+            showRulers={showRulers}
+            onToggleRulers={onToggleRulers}
+            snapToGrid={snapToGrid}
+            onToggleSnap={onToggleSnap}
+            showSafeAreas={showSafeAreas}
+            onToggleSafeAreas={onToggleSafeAreas}
+            onionSkin={onionSkin}
+            onToggleOnionSkin={onToggleOnionSkin}
+            autoKeyframe={autoKeyframe}
+            onToggleAutoKeyframe={onToggleAutoKeyframe}
+            onOpenMotionPresets={onOpenMotionPresets}
+            onAddKeyframe={onAddKeyframe}
+            onOpenKeyframeGuide={onOpenKeyframeGuide}
+            onOpenLearningGuide={onOpenLearningGuide}
+            onStartInteractiveTour={onStartInteractiveTour}
+            activeLayoutId={activeLayoutId}
+            allLayouts={allWorkspaceLayouts}
+            onSelectLayout={onSelectWorkspaceLayout}
+            onOpenWorkspaceManager={onOpenWorkspaceManager}
+            onQuickSaveWorkspace={onQuickSaveWorkspace}
+            onResetDefaultWorkspace={onResetDefaultWorkspace}
+            toolbarVisible={toolbarVisible}
+            onToggleToolbarVisible={onToggleToolbarVisible}
+            inspectorVisible={inspectorVisible}
+            onToggleInspectorVisible={onToggleInspectorVisible}
+            timelineVisible={timelineVisible}
+            onToggleTimelineVisible={onToggleTimelineVisible}
+            inspectorPosition={inspectorPosition}
+            onToggleInspectorPosition={onToggleInspectorPosition}
+            toolbarPosition={toolbarPosition}
+            onToggleToolbarPosition={onToggleToolbarPosition}
+          />
         </div>
 
-        <div className="w-[1px] h-3.5 bg-zinc-800 shrink-0 hidden md:block" />
-
-        {/* CENTER: DESKTOP CONDENSED MENUBAR */}
-        <MenuBar
-          className="hidden md:flex items-center gap-0.5 select-none relative z-40 text-xs"
-          composition={composition}
-          onUpdateComposition={onUpdateComposition}
-          onNewBlankComposition={onNewBlankComposition}
-          onOpenProjectJson={onOpenProjectJson}
-          onSaveProjectJson={onSaveProjectJson}
-          onImportSvg={onImportSvg}
-          onOpenPsdModal={onOpenPsdModal}
-          onOpenExportModal={onOpenExportModal}
-          onOpenPresetModal={onOpenPresetModal}
-          onOpenCompSettings={onOpenCompSettings}
-          onOpenShortcutsModal={onOpenShortcutsModal}
-          onOpenReframeModal={onOpenReframeModal}
-          onOpenMcpModal={onOpenMcpModal}
-          onApplyFigmaAlign={onApplyFigmaAlign}
-          onUndo={onUndo}
-          onRedo={onRedo}
-          canUndo={canUndo}
-          canRedo={canRedo}
-          selectedLayerIds={selectedLayerIds}
-          onSelectLayer={onSelectLayer}
-          onAddLayer={onAddLayer}
-          onDuplicateLayer={onDuplicateLayer}
-          onDeleteLayer={onDeleteLayer}
-          onReorderLayer={onReorderLayer}
-          onApplyTransformAction={onApplyTransformAction}
-          onApplyEffect={onApplyEffect}
-          onApplyEasingToSelected={onApplyEasingToSelected}
-          isPlaying={isPlaying}
-          onTogglePlay={onTogglePlay}
-          onResetTime={onResetTime}
-          viewportZoom={viewportZoom}
-          onSetViewportZoom={onSetViewportZoom}
-          onResetViewport={onResetViewport}
-          showGrid={showGrid}
-          onToggleGrid={onToggleGrid}
-          showRulers={showRulers}
-          onToggleRulers={onToggleRulers}
-          snapToGrid={snapToGrid}
-          onToggleSnap={onToggleSnap}
-          showSafeAreas={showSafeAreas}
-          onToggleSafeAreas={onToggleSafeAreas}
-          onionSkin={onionSkin}
-          onToggleOnionSkin={onToggleOnionSkin}
-          autoKeyframe={autoKeyframe}
-          onToggleAutoKeyframe={onToggleAutoKeyframe}
-          onOpenMotionPresets={onOpenMotionPresets}
-          onAddKeyframe={onAddKeyframe}
-          onOpenKeyframeGuide={onOpenKeyframeGuide}
-          onOpenLearningGuide={onOpenLearningGuide}
-          onStartInteractiveTour={onStartInteractiveTour}
-          activeLayoutId={activeLayoutId}
-          allLayouts={allWorkspaceLayouts}
-          onSelectLayout={onSelectWorkspaceLayout}
-          onOpenWorkspaceManager={onOpenWorkspaceManager}
-          onQuickSaveWorkspace={onQuickSaveWorkspace}
-          onResetDefaultWorkspace={onResetDefaultWorkspace}
-          toolbarVisible={toolbarVisible}
-          onToggleToolbarVisible={onToggleToolbarVisible}
-          inspectorVisible={inspectorVisible}
-          onToggleInspectorVisible={onToggleInspectorVisible}
-          timelineVisible={timelineVisible}
-          onToggleTimelineVisible={onToggleTimelineVisible}
-          inspectorPosition={inspectorPosition}
-          onToggleInspectorPosition={onToggleInspectorPosition}
-          toolbarPosition={toolbarPosition}
-          onToggleToolbarPosition={onToggleToolbarPosition}
-        />
-      </div>
-
-      {/* RIGHT: WORKSPACE SWITCHER + QUICK PANEL TOGGLES + UTILITIES + EXPORT */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        {/* QUICK UNDO / REDO BUTTONS */}
-        <div className="flex items-center gap-0.5 bg-zinc-900/90 border border-zinc-800 p-0.5 rounded-lg">
-          <button
-            onClick={onUndo}
-            disabled={!canUndo}
-            title="Deshacer (Ctrl+Z)"
-            className={`p-1 rounded transition-colors cursor-pointer ${
-              canUndo ? 'text-zinc-300 hover:text-white hover:bg-zinc-800' : 'text-zinc-600 opacity-40 cursor-not-allowed'
-            }`}
-          >
-            <Undo2 className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={onRedo}
-            disabled={!canRedo}
-            title="Rehacer (Ctrl+Y o Ctrl+Shift+Z)"
-            className={`p-1 rounded transition-colors cursor-pointer ${
-              canRedo ? 'text-zinc-300 hover:text-white hover:bg-zinc-800' : 'text-zinc-600 opacity-40 cursor-not-allowed'
-            }`}
-          >
-            <Redo2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* WORKSPACE & FOCUS MODE DROPDOWN SELECTOR */}
-        <div className="relative" ref={workspaceDropdownRef}>
-          <button
-            onClick={() => setIsWorkspaceMenuOpen(!isWorkspaceMenuOpen)}
-            title="Cambiar Modo de Enfoque Creativo / Espacio de Trabajo"
-            className="flex items-center gap-1.5 text-[11px] text-zinc-300 hover:text-white bg-zinc-900/90 hover:bg-zinc-850 border border-zinc-800 px-2 py-1 rounded transition-all font-medium cursor-pointer shadow-xs"
-          >
-            <Layout className="w-3 h-3 text-indigo-400" />
-            <span className="hidden md:inline font-semibold max-w-[130px] truncate text-indigo-200">
-              {currentLayoutName}
-            </span>
-            <ChevronDown className="w-3 h-3 text-zinc-500" />
-          </button>
-
-          {isWorkspaceMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-64 bg-zinc-900 border border-zinc-750 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 text-xs">
-              <div className="px-3 py-1 text-[10px] font-mono uppercase text-zinc-500 font-bold flex items-center justify-between">
-                <span>Modos de Enfoque</span>
-                <span className="text-zinc-500">Atajo</span>
-              </div>
-
-              {allWorkspaceLayouts.map((l) => {
-                const isActive = activeLayoutId === l.id;
-                return (
-                  <button
-                    key={l.id}
-                    onClick={() => {
-                      if (onSelectWorkspaceLayout) onSelectWorkspaceLayout(l);
-                      setIsWorkspaceMenuOpen(false);
-                    }}
-                    className={`w-full px-3 py-1.5 text-left flex items-center justify-between transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-blue-600/15 text-blue-300 font-bold'
-                        : 'text-zinc-300 hover:bg-zinc-800 hover:text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2 truncate">
-                      {isActive ? (
-                        <Check className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                      ) : (
-                        <span className="w-3.5 shrink-0" />
-                      )}
-                      <span className="truncate">{l.name}</span>
-                    </span>
-                    {l.shortcut && (
-                      <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                        {l.shortcut}
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
-
-              <div className="h-[1px] bg-zinc-800 my-1" />
-
-              {/* Quick Save Current Workspace */}
-              {onQuickSaveWorkspace && (
-                <button
-                  onClick={() => {
-                    onQuickSaveWorkspace();
-                    setIsWorkspaceMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-1.5 text-left flex items-center gap-2 text-blue-300 hover:bg-blue-950/40 hover:text-blue-200 transition-colors font-semibold cursor-pointer"
-                >
-                  <Save className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Guardar diseño actual...</span>
-                </button>
-              )}
-
-              {/* Open Manager */}
-              {onOpenWorkspaceManager && (
-                <button
-                  onClick={() => {
-                    onOpenWorkspaceManager();
-                    setIsWorkspaceMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-1.5 text-left flex items-center justify-between text-zinc-300 hover:bg-zinc-800 hover:text-white transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2">
-                    <Layout className="w-3.5 h-3.5 text-indigo-400" />
-                    <span>Gestionar espacios...</span>
-                  </span>
-                  <span className="text-[10px] font-mono px-1 py-0.2 rounded bg-zinc-800 text-zinc-400">
-                    Shift+W
-                  </span>
-                </button>
-              )}
-
-              {/* Reset to standard layout */}
-              {onResetDefaultWorkspace && (
-                <button
-                  onClick={() => {
-                    onResetDefaultWorkspace();
-                    setIsWorkspaceMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-1.5 text-left flex items-center gap-2 text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition-colors cursor-pointer"
-                >
-                  <RotateCw className="w-3.5 h-3.5 text-zinc-500" />
-                  <span>Restablecer estándar</span>
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* QUICK PANEL TOGGLES PILL (Toolbar, Timeline, Inspector) */}
-        <div className="hidden lg:flex items-center bg-zinc-900 border border-zinc-800 p-0.5 rounded-lg gap-0.5">
+        {/* Center: Workspace Panels Toggle Icons (Toolbar, Timeline, Inspector) */}
+        <div className="flex items-center gap-0.5 bg-zinc-900 border border-zinc-800 rounded-md p-0.5">
           {onToggleToolbarVisible && (
             <button
               onClick={onToggleToolbarVisible}
-              title={`Barra de herramientas (${toolbarVisible ? 'Visible' : 'Oculta'})`}
+              title={`Barra de Herramientas (${toolbarVisible ? 'Visible' : 'Oculta'})`}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 toolbarVisible ? 'bg-zinc-800 text-blue-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              <Columns className="w-3 h-3" />
+              <Columns className="w-3.5 h-3.5" />
             </button>
           )}
-
           {onToggleTimelineVisible && (
             <button
               onClick={onToggleTimelineVisible}
-              title={`Línea de tiempo (${timelineVisible ? 'Visible' : 'Oculta'})`}
+              title={`Línea de Tiempo (${timelineVisible ? 'Visible' : 'Oculta'})`}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 timelineVisible ? 'bg-zinc-800 text-blue-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              <Rows className="w-3 h-3" />
+              <Rows className="w-3.5 h-3.5" />
             </button>
           )}
-
           {onToggleInspectorVisible && (
             <button
               onClick={onToggleInspectorVisible}
-              title={`Inspector de propiedades (${inspectorVisible ? 'Visible' : 'Oculto'})`}
+              title={`Inspector de Propiedades (${inspectorVisible ? 'Visible' : 'Oculto'})`}
               className={`p-1 rounded transition-colors cursor-pointer ${
                 inspectorVisible ? 'bg-zinc-800 text-blue-400 font-bold' : 'text-zinc-500 hover:text-zinc-300'
               }`}
             >
-              <Layout className="w-3 h-3" />
+              <Layout className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Primary Accent: Export HTML5 Action */}
-        <button
-          onClick={onOpenExportModal}
-          className="flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 px-2.5 sm:px-3 py-1 rounded shadow-sm shadow-blue-600/30 transition-all cursor-pointer shrink-0"
-        >
-          <FileCode2 className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Export HTML5</span>
-          <span className="sm:hidden">Export</span>
-        </button>
+        {/* Right: Reframe + Undo/Redo + Export CTA */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Quick Dimensions Reframe */}
+          {onOpenReframeModal && (
+            <button
+              onClick={onOpenReframeModal}
+              title={`Dimensiones activas: ${composition.width} × ${composition.height} px (Clic para reframe)`}
+              className="hidden sm:flex items-center gap-1 text-[11px] font-mono text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 px-2 py-0.5 rounded transition-colors cursor-pointer"
+            >
+              <Move className="w-2.5 h-2.5 text-zinc-400" />
+              <span>{composition.width}×{composition.height}</span>
+            </button>
+          )}
 
-        {/* Secondary: Import PSD Button (Desktop) */}
-        {onOpenPsdModal && (
-          <button
-            onClick={onOpenPsdModal}
-            title="Importar capas desde archivo Photoshop (.psd / .psb)"
-            className="hidden 2xl:flex items-center gap-1.5 text-xs font-semibold text-zinc-200 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-2.5 py-1 rounded transition-all cursor-pointer hover:text-white shrink-0"
-          >
-            <FileImage className="w-3 h-3 text-blue-400" />
-            <span>Importar PSD</span>
-            <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1 py-0.2 rounded font-mono font-bold">
-              .PSD
-            </span>
-          </button>
-        )}
-
-        {/* Templates Modal Trigger (Desktop) */}
-        <button
-          onClick={onOpenPresetModal}
-          title="Ver Plantillas de Animación"
-          className="hidden 2xl:flex items-center gap-1 text-[11px] text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-2 py-1 rounded transition-colors font-medium cursor-pointer shrink-0"
-        >
-          <Layers className="w-3 h-3 text-indigo-400" />
-          <span>Plantillas</span>
-        </button>
-
-        {/* MCP AI Server Trigger (Desktop) */}
-        {onOpenMcpModal && (
-          <button
-            onClick={onOpenMcpModal}
-            title="Conexión MCP con OpenCode / Claude Desktop / Cursor"
-            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md transition-all font-semibold cursor-pointer border shrink-0 bg-gradient-to-r from-purple-950/70 to-indigo-950/70 text-purple-200 border-purple-750/70 hover:border-purple-500 hover:text-white hover:shadow-sm"
-          >
-            <Bot className="w-3.5 h-3.5 text-purple-400" />
-            <span>MCP IA</span>
-            <span className="text-[9px] bg-purple-500/25 text-purple-300 px-1 py-0.2 rounded font-mono">
-              OpenCode
-            </span>
-          </button>
-        )}
-
-        {/* Guides Quick Trigger (Desktop) */}
-        {onOpenLearningGuide && (
-          <button
-            onClick={() => onOpenLearningGuide('overview')}
-            title="Abrir Centro de Aprendizaje y Guías"
-            className="hidden 2xl:flex items-center gap-1 text-[11px] text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 px-2 py-1 rounded transition-all font-medium cursor-pointer shrink-0"
-          >
-            <BookOpen className="w-3 h-3 text-blue-400" />
-            <span>Guías</span>
-          </button>
-        )}
-
-        {/* Real-time Collaboration Trigger (Desktop) */}
-        {onOpenRealtimeModal && (
-          <button
-            onClick={onOpenRealtimeModal}
-            title={
-              syncStatus === 'connected'
-                ? 'WebSocket Conectado'
-                : syncStatus === 'connecting'
-                ? 'Conectando...'
-                : 'Sincronización Local / Broadcast'
-            }
-            className={`hidden 2xl:flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-all font-medium cursor-pointer border shrink-0 ${
-              syncStatus === 'connected'
-                ? 'bg-emerald-950/50 text-emerald-300 border-emerald-800/60 hover:bg-emerald-900/60'
-                : syncStatus === 'connecting'
-                ? 'bg-amber-950/50 text-amber-300 border-amber-800/60 hover:bg-amber-900/60'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:bg-zinc-850 hover:text-zinc-200'
-            }`}
-          >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                syncStatus === 'connected'
-                  ? 'bg-emerald-500 animate-pulse'
-                  : syncStatus === 'connecting'
-                  ? 'bg-amber-500 animate-ping'
-                  : 'bg-blue-500'
+          {/* Quick Undo / Redo */}
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={onUndo}
+              disabled={!canUndo}
+              title="Deshacer (Ctrl+Z)"
+              className={`p-1 rounded transition-colors cursor-pointer ${
+                canUndo ? 'text-zinc-300 hover:text-white hover:bg-zinc-800' : 'text-zinc-600 opacity-40 cursor-not-allowed'
               }`}
-            />
-            <Radio className="w-3 h-3 text-emerald-400" />
-            <span>{syncStatus === 'connected' ? 'Live' : 'Sync'}</span>
-          </button>
-        )}
+            >
+              <Undo2 className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onRedo}
+              disabled={!canRedo}
+              title="Rehacer (Ctrl+Y)"
+              className={`p-1 rounded transition-colors cursor-pointer ${
+                canRedo ? 'text-zinc-300 hover:text-white hover:bg-zinc-800' : 'text-zinc-600 opacity-40 cursor-not-allowed'
+              }`}
+            >
+              <Redo2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-        {/* Figma-Style Quick Command Palette (Desktop) */}
-        {onOpenCommandPalette && (
+          {/* Primary Export CTA */}
           <button
-            onClick={onOpenCommandPalette}
-            title="Abrir Paleta de Comandos Rápidos (Ctrl+K o /)"
-            className="hidden 2xl:flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800 px-2 py-1 rounded transition-colors font-medium cursor-pointer shrink-0"
+            onClick={onOpenExportModal}
+            className="flex items-center gap-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded shadow-xs transition-colors cursor-pointer"
           >
-            <Search className="w-3 h-3 text-zinc-400" />
-            <span className="text-[10px] text-zinc-500 font-mono">Buscar</span>
+            <Download className="w-3 h-3" />
+            <span>Exportar</span>
           </button>
-        )}
+        </div>
+      </div>
 
-        {/* RESPONSIVE TOOLS OVERFLOW DROPDOWN (For < 2xl screens & tablets) */}
-        <div className="relative 2xl:hidden" ref={toolsDropdownRef}>
-          <button
-            onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
-            title="Más herramientas y accesos rápidos"
-            className={`p-1.5 rounded-lg border transition-colors cursor-pointer flex items-center justify-center ${
-              isToolsMenuOpen
-                ? 'bg-zinc-800 text-white border-zinc-700'
-                : 'bg-zinc-900/80 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-850'
-            }`}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 text-zinc-300" />
-          </button>
-
-          {isToolsMenuOpen && (
-            <div className="absolute right-0 top-full mt-1.5 w-60 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
-              <div className="px-3 py-1 text-[10px] font-mono uppercase text-zinc-500 font-bold">
-                Herramientas y Extras
-              </div>
-
-              {onOpenPsdModal && (
-                <button
-                  onClick={() => {
-                    onOpenPsdModal();
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <FileImage className="w-3.5 h-3.5 text-blue-400" /> Importar PSD (.psd)
-                  </span>
-                  <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1 py-0.5 rounded font-mono">Photoshop</span>
-                </button>
-              )}
-
+      {/* TIER 2: UNIFIED CONTEXT RIBBON & TOOLS STRIP (38px) */}
+      <div className="h-9.5 px-2 bg-zinc-925 flex items-center justify-between gap-3 text-xs overflow-x-auto custom-scrollbar select-none">
+        {/* Left Section: Creation & Selection Tools */}
+        <div className="flex items-center gap-1 shrink-0">
+          {onSelectTool && (
+            <>
               <button
-                onClick={() => {
-                  onOpenPresetModal();
-                  setIsToolsMenuOpen(false);
-                }}
-                className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
+                onClick={() => onSelectTool('select')}
+                title="Herramienta Selección (V)"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
+                  activeTool === 'select'
+                    ? 'bg-blue-600 text-white font-bold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850'
+                }`}
               >
-                <span className="flex items-center gap-2 font-medium">
-                  <Layers className="w-3.5 h-3.5 text-indigo-400" /> Plantillas de Banners
-                </span>
+                <MousePointer className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onSelectTool('hand')}
+                title="Herramienta Mano / Desplazar Lienzo (H)"
+                className={`p-1.5 rounded transition-colors cursor-pointer ${
+                  activeTool === 'hand'
+                    ? 'bg-blue-600 text-white font-bold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850'
+                }`}
+              >
+                <Hand className="w-3.5 h-3.5" />
               </button>
 
-              {onOpenMcpModal && (
-                <button
-                  onClick={() => {
-                    onOpenMcpModal();
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-purple-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <Bot className="w-3.5 h-3.5 text-purple-400" /> Servidor MCP (OpenCode / IA)
-                  </span>
-                  <span className="text-[9px] bg-purple-500/20 text-purple-300 px-1 py-0.5 rounded font-mono">MCP</span>
-                </button>
-              )}
+              <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+            </>
+          )}
 
-              {onOpenLearningGuide && (
-                <button
-                  onClick={() => {
-                    onOpenLearningGuide('overview');
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <BookOpen className="w-3.5 h-3.5 text-amber-400" /> Guías y Tutoriales
-                  </span>
-                </button>
-              )}
+          {/* Layer Creation Quick Buttons */}
+          <button
+            onClick={() => onAddLayer('text')}
+            title="Añadir Capa de Texto (T)"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 rounded transition-colors cursor-pointer"
+          >
+            <Type className="w-3.5 h-3.5 text-blue-400" />
+          </button>
+          <button
+            onClick={() => onAddLayer('rect')}
+            title="Añadir Rectángulo (R)"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 rounded transition-colors cursor-pointer"
+          >
+            <Square className="w-3.5 h-3.5 text-emerald-400" />
+          </button>
+          <button
+            onClick={() => onAddLayer('circle')}
+            title="Añadir Círculo (O)"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 rounded transition-colors cursor-pointer"
+          >
+            <Circle className="w-3.5 h-3.5 text-amber-400" />
+          </button>
+          <button
+            onClick={() => onAddLayer('star')}
+            title="Añadir Estrella (S)"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 rounded transition-colors cursor-pointer"
+          >
+            <Star className="w-3.5 h-3.5 text-purple-400" />
+          </button>
+          <button
+            onClick={() => onAddLayer('polygon')}
+            title="Añadir Polígono (P)"
+            className="p-1.5 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-850 rounded transition-colors cursor-pointer"
+          >
+            <Hexagon className="w-3.5 h-3.5 text-pink-400" />
+          </button>
 
-              {onOpenCommandPalette && (
-                <button
-                  onClick={() => {
-                    onOpenCommandPalette();
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <Search className="w-3.5 h-3.5 text-zinc-400" /> Paleta de Comandos
-                  </span>
-                  <span className="text-[10px] font-mono text-zinc-500 group-hover:text-blue-200">Ctrl+K</span>
-                </button>
-              )}
+          <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
 
-              {onOpenRealtimeModal && (
-                <button
-                  onClick={() => {
-                    onOpenRealtimeModal();
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <Radio className="w-3.5 h-3.5 text-emerald-400" /> Sincronización en Vivo
-                  </span>
-                  <span className="text-[10px] font-mono text-emerald-400">{syncStatus}</span>
-                </button>
-              )}
-
-              {deferredPrompt && !isInstalled && (
-                <button
-                  onClick={() => {
-                    handleInstallPwa();
-                    setIsToolsMenuOpen(false);
-                  }}
-                  className="w-full px-3 py-2 text-xs text-left text-blue-300 hover:text-white hover:bg-blue-600 flex items-center justify-between group transition-colors cursor-pointer"
-                >
-                  <span className="flex items-center gap-2 font-medium">
-                    <DownloadCloud className="w-3.5 h-3.5 text-blue-400" /> Instalar Aplicación
-                  </span>
-                </button>
-              )}
+          {/* Align Helpers */}
+          {onApplyFigmaAlign && (
+            <div className="flex items-center gap-0.5">
+              <button
+                onClick={() => onApplyFigmaAlign('alignLeft', true)}
+                title="Alinear al borde izquierdo"
+                className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 rounded cursor-pointer"
+              >
+                <AlignLeft className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onApplyFigmaAlign('alignCenterH', true)}
+                title="Centrar horizontalmente"
+                className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 rounded cursor-pointer"
+              >
+                <AlignCenter className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => onApplyFigmaAlign('alignRight', true)}
+                title="Alinear al borde derecho"
+                className="p-1 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-850 rounded cursor-pointer"
+              >
+                <AlignRight className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
+
+          <div className="w-[1px] h-3.5 bg-zinc-800 mx-0.5" />
+
+          {/* Grid, Snap & Rulers */}
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={onToggleGrid}
+              title={`Cuadrícula (${showGrid ? 'Activa' : 'Oculta'})`}
+              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                showGrid ? 'text-blue-400 bg-blue-950/40' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onToggleSnap}
+              title={`Imán / Snap a guías (${snapToGrid ? 'Activo' : 'Inactivo'})`}
+              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                snapToGrid ? 'text-blue-400 bg-blue-950/40' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Magnet className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={onToggleSafeAreas}
+              title={`Áreas seguras (${showSafeAreas ? 'Activas' : 'Inactivas'})`}
+              className={`p-1.5 rounded transition-colors cursor-pointer ${
+                showSafeAreas ? 'text-blue-400 bg-blue-950/40' : 'text-zinc-500 hover:text-zinc-300'
+              }`}
+            >
+              <Camera className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Right Section: Viewport Zoom */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="relative" ref={zoomDropdownRef}>
+            <button
+              onClick={() => setIsZoomDropdownOpen(!isZoomDropdownOpen)}
+              title="Ajustar zoom del monitor"
+              className="px-2 py-0.5 rounded bg-zinc-900 hover:bg-zinc-850 border border-zinc-800 text-zinc-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer text-xs"
+            >
+              <span className="font-mono">{Math.round(viewportZoom * 100)}%</span>
+              <ChevronDown className="w-3 h-3 text-zinc-500" />
+            </button>
+
+            {isZoomDropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 w-32 bg-zinc-900 border border-zinc-800 rounded-md shadow-2xl py-1 z-50 text-xs">
+                {[0.5, 0.75, 1, 1.25, 1.5, 2].map((z) => (
+                  <button
+                    key={z}
+                    onClick={() => {
+                      if (onSetViewportZoom) onSetViewportZoom(z);
+                      setIsZoomDropdownOpen(false);
+                    }}
+                    className="w-full px-3 py-1 text-left text-zinc-300 hover:text-white hover:bg-blue-600 flex items-center justify-between cursor-pointer"
+                  >
+                    <span>{z * 100}%</span>
+                    {Math.abs(viewportZoom - z) < 0.05 && <Check className="w-3 h-3 text-white" />}
+                  </button>
+                ))}
+                <div className="h-[1px] bg-zinc-800 my-1" />
+                <button
+                  onClick={() => {
+                    if (onResetViewport) onResetViewport();
+                    setIsZoomDropdownOpen(false);
+                  }}
+                  className="w-full px-3 py-1 text-left text-blue-400 hover:text-white hover:bg-blue-600 cursor-pointer"
+                >
+                  Ajustar a Pantalla
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>
   );
 };
-

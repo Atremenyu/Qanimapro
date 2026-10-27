@@ -35,7 +35,9 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<ConnectionStatus>(realtimeSync.status);
   const [bridgeUrl, setBridgeUrl] = useState<string>(realtimeSync.serverUrl || 'ws://localhost:49222');
-  const [activePromptCategory, setActivePromptCategory] = useState<'restaurantes' | 'pastelerias' | 'talleres' | 'reframe' | 'animaciones'>('restaurantes');
+  const [activePromptCategory, setActivePromptCategory] = useState<
+    'huashu' | 'restaurantes' | 'pastelerias' | 'talleres' | 'reframe' | 'animaciones'
+  >('huashu');
 
   useEffect(() => {
     if (!isOpen) return;
@@ -211,6 +213,33 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
+          {/* Huashu-Design (花叔) Skill Banner */}
+          <div className="bg-gradient-to-r from-amber-950/40 via-zinc-900 to-zinc-950 border border-amber-600/40 rounded-xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 font-mono font-bold px-2 py-0.5 rounded-full">
+                  Skill Instalado
+                </span>
+                <h4 className="text-sm font-bold text-amber-200 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-amber-400" />
+                  花叔Design · Huashu-Design (v3.0)
+                </h4>
+              </div>
+              <p className="text-xs text-zinc-300 max-w-2xl leading-relaxed">
+                Skill de dirección de arte y diseño HTML nativo para agentes de IA: <strong>100% obligatorio proponer 3 direcciones divergentes</strong> antes de diseñar, con auditoría anti-clichés de IA y ritmo cinemático de animación. Instalado en <code className="text-amber-300 font-mono text-[11px] bg-black/50 px-1 py-0.5 rounded">skills/huashu-design</code> y activo para OpenCode y Claude Code.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={() => setActivePromptCategory('huashu')}
+                className="bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Ver Prompts Huashu</span>
+              </button>
+            </div>
+          </div>
+
           {/* Config Tabs Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -346,8 +375,19 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
               {/* Category Pills */}
               <div className="flex gap-1.5 overflow-x-auto">
                 <button
+                  onClick={() => setActivePromptCategory('huashu')}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                    activePromptCategory === 'huashu'
+                      ? 'bg-amber-500 text-black shadow-sm font-bold'
+                      : 'bg-zinc-800 text-amber-300 hover:text-white hover:bg-zinc-750'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>花叔 Huashu-Design</span>
+                </button>
+                <button
                   onClick={() => setActivePromptCategory('restaurantes')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activePromptCategory === 'restaurantes'
                       ? 'bg-blue-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -357,7 +397,7 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setActivePromptCategory('pastelerias')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activePromptCategory === 'pastelerias'
                       ? 'bg-blue-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -367,7 +407,7 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setActivePromptCategory('talleres')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activePromptCategory === 'talleres'
                       ? 'bg-blue-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -377,7 +417,7 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setActivePromptCategory('reframe')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activePromptCategory === 'reframe'
                       ? 'bg-blue-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -387,7 +427,7 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
                 </button>
                 <button
                   onClick={() => setActivePromptCategory('animaciones')}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer shrink-0 ${
                     activePromptCategory === 'animaciones'
                       ? 'bg-blue-600 text-white'
                       : 'bg-zinc-800 text-zinc-400 hover:text-white'
@@ -400,6 +440,43 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
 
             {/* Prompt Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {activePromptCategory === 'huashu' && (
+                <>
+                  <PromptItem
+                    title="Regla de Oro Huashu: 3 Direcciones Creativas Primero"
+                    prompt='Actúa como Director de Arte con la metodología Huashu-Design (花叔). Para mi marca [Nombre], ejecuta primero huashu_design_directions. Preséntame 3 direcciones estéticas divergentes (Minimalista Editorial, Cinético Vibrante y Artesanal Cálido) con sus paletas de color y tipografías. Pregúntame cuál prefiero antes de construir el banner en VectorMotion.'
+                    tool="huashu_design_directions"
+                    copiedKey={copiedKey}
+                    onCopy={copyToClipboard}
+                    id="p_huashu_1"
+                  />
+                  <PromptItem
+                    title="Auditoría Anti-Cliché de IA y Crítica de Diseño"
+                    prompt="Ejecuta huashu_design_review sobre la composición activa de VectorMotion. Analiza si tiene clichés de IA (fondos warm cream genéricos, falta de jerarquía, tipografías débiles) y dime qué corregir para alcanzar nivel de estudio profesional."
+                    tool="huashu_design_review"
+                    copiedKey={copiedKey}
+                    onCopy={copyToClipboard}
+                    id="p_huashu_2"
+                  />
+                  <PromptItem
+                    title="Ritmo Cinemático y Easing Profesional"
+                    prompt="Aplica las mejores prácticas de animación de Huashu-Design en el banner actual: haz que los elementos entren de forma escalonada (staggered) usando curvas suaves de aceleración (power2Out y resorte suave en el CTA), evitando movimientos lineales o robóticos."
+                    tool="animate_layer + gsap"
+                    copiedKey={copiedKey}
+                    onCopy={copyToClipboard}
+                    id="p_huashu_3"
+                  />
+                  <PromptItem
+                    title="Composición con Tipografía Monumental y Kicker"
+                    prompt='Siguiendo las reglas de tipografía de Huashu-Design, añade un kicker en mayúsculas pequeñas espaciadas, ajusta el titular principal con peso 900 y añade una tarjeta de información modular estilo bento con colores de alto contraste.'
+                    tool="create_layer + update_layer"
+                    copiedKey={copiedKey}
+                    onCopy={copyToClipboard}
+                    id="p_huashu_4"
+                  />
+                </>
+              )}
+
               {activePromptCategory === 'restaurantes' && (
                 <>
                   <PromptItem
@@ -629,6 +706,14 @@ export const McpModal: React.FC<McpModalProps> = ({ isOpen, onClose }) => {
               <div className="bg-zinc-900 border border-zinc-800 p-2.5 rounded-lg space-y-1">
                 <div className="font-mono font-semibold text-indigo-400">control_playback</div>
                 <div className="text-[11px] text-zinc-400">Controla reproducción: play, pause, toggle y saltar en la línea.</div>
+              </div>
+              <div className="bg-amber-950/30 border border-amber-600/40 p-2.5 rounded-lg space-y-1">
+                <div className="font-mono font-semibold text-amber-300">huashu_design_directions</div>
+                <div className="text-[11px] text-zinc-300">Genera 3 direcciones divergentes (estilos, paletas, layout) para cualquier tema.</div>
+              </div>
+              <div className="bg-amber-950/30 border border-amber-600/40 p-2.5 rounded-lg space-y-1">
+                <div className="font-mono font-semibold text-amber-300">huashu_design_review</div>
+                <div className="text-[11px] text-zinc-300">Auditoría experta de diseño, anti-clichés de IA, ritmo de animación y contraste.</div>
               </div>
             </div>
           </div>

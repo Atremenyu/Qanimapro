@@ -1,0 +1,6 @@
+{
+  "summary":  "Plan de reestructuración profesional UI/UX para VectorMotion Studio basado en Huashu-Design y NextLevelBuilder UI/UX Pro Max. Resuelve colisiones y solapamientos de menús en pantallas completas y diferentes resoluciones, unifica menús redundantes en una barra de menú compacta (32px) y un ribbon contextual (40px) estilo After Effects/Premiere Pro, implementa un espacio de trabajo modular acoplado sin solapas flotantes invasivas, y consolida la interfaz en un tema oscuro de alto contraste zinc-900/950.",
+  "updatedAt":  "2026-10-27T00:26:57.062427292Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
