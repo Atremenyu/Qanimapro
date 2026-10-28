@@ -37,7 +37,7 @@ export function extractCompositionImages(
   const images: ExtractedImage[] = [];
   const usedFileNames = new Set<string>();
 
-  comp.layers.forEach((layer, idx) => {
+  (comp.layers || []).forEach((layer, idx) => {
     if (layer.type !== 'image' || !layer.image || !layer.image.src) return;
 
     const rawSrc = layer.image.src;

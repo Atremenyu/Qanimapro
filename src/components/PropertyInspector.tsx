@@ -408,7 +408,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
           </div>
 
           <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
-            {composition.layers.length} {composition.layers.length === 1 ? 'Capa' : 'Capas'}
+            {(composition.layers || []).length} {(composition.layers || []).length === 1 ? 'Capa' : 'Capas'}
           </span>
         </div>
 
@@ -680,13 +680,13 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
           : undefined,
     };
     onUpdateLayer(layer.id, {
-      modifiers: [...layer.modifiers, newMod],
+      modifiers: [...(layer.modifiers || []), newMod],
     });
   };
 
   const removeModifier = (modId: string) => {
     onUpdateLayer(layer.id, {
-      modifiers: layer.modifiers.filter((m) => m.id !== modId),
+      modifiers: (layer.modifiers || []).filter((m) => m.id !== modId),
     });
   };
 
@@ -764,14 +764,14 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
           <div className="flex items-center gap-1 text-zinc-400 font-mono text-[10px]">
             <Layers className="w-3 h-3 text-blue-400" />
             <span>
-              Capa {composition.layers.findIndex((l) => l.id === layer.id) + 1} de {composition.layers.length}
+              Capa {Math.max(1, (composition.layers || []).findIndex((l) => l.id === layer.id) + 1)} de {(composition.layers || []).length}
             </span>
           </div>
 
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => onReorderLayer(layer.id, 'front')}
-              disabled={composition.layers.findIndex((l) => l.id === layer.id) === 0}
+              disabled={(composition.layers || []).findIndex((l) => l.id === layer.id) === 0}
               title="Traer al Frente (Ctrl+Shift+])"
               className="p-1 text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed hover:bg-zinc-800 rounded transition-colors cursor-pointer"
             >
@@ -779,7 +779,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             </button>
             <button
               onClick={() => onReorderLayer(layer.id, 'forward')}
-              disabled={composition.layers.findIndex((l) => l.id === layer.id) === 0}
+              disabled={(composition.layers || []).findIndex((l) => l.id === layer.id) === 0}
               title="Subir (Ctrl+] o Alt+↑)"
               className="p-1 text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed hover:bg-zinc-800 rounded transition-colors cursor-pointer"
             >
@@ -787,7 +787,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             </button>
             <button
               onClick={() => onReorderLayer(layer.id, 'backward')}
-              disabled={composition.layers.findIndex((l) => l.id === layer.id) === composition.layers.length - 1}
+              disabled={(composition.layers || []).findIndex((l) => l.id === layer.id) === Math.max(0, (composition.layers || []).length - 1)}
               title="Bajar (Ctrl+[ o Alt+↓)"
               className="p-1 text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed hover:bg-zinc-800 rounded transition-colors cursor-pointer"
             >
@@ -795,7 +795,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
             </button>
             <button
               onClick={() => onReorderLayer(layer.id, 'back')}
-              disabled={composition.layers.findIndex((l) => l.id === layer.id) === composition.layers.length - 1}
+              disabled={(composition.layers || []).findIndex((l) => l.id === layer.id) === Math.max(0, (composition.layers || []).length - 1)}
               title="Enviar al Fondo (Ctrl+Shift+[)"
               className="p-1 text-zinc-400 hover:text-white disabled:text-zinc-700 disabled:cursor-not-allowed hover:bg-zinc-800 rounded transition-colors cursor-pointer"
             >
@@ -846,7 +846,7 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
               : 'border-transparent hover:text-zinc-200'
           }`}
         >
-          FX {layer.modifiers.length > 0 && `(${layer.modifiers.length})`}
+          FX {(layer.modifiers || []).length > 0 && `(${(layer.modifiers || []).length})`}
         </button>
       </div>
 
@@ -2761,12 +2761,12 @@ export const PropertyInspector: React.FC<PropertyInspectorProps> = ({
               </button>
             </div>
 
-            {layer.modifiers.length === 0 ? (
+            {(layer.modifiers || []).length === 0 ? (
               <div className="p-4 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-lg">
                 No hay modificadores activos. Agrega un Repeater o Wiggle para crear efectos dinámicos.
               </div>
             ) : (
-              layer.modifiers.map((mod) => (
+              (layer.modifiers || []).map((mod) => (
                 <div
                   key={mod.id}
                   className="p-2.5 rounded bg-zinc-900 border border-zinc-800 space-y-2"

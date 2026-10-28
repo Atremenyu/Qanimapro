@@ -1198,7 +1198,7 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedLayerIds, composition.duration, composition.layers, allLayouts, handleApplyLayout]);
 
-  const selectedLayer = composition.layers.find((l) => selectedLayerIds.includes(l.id)) || null;
+  const selectedLayer = (composition.layers || []).find((l) => selectedLayerIds.includes(l.id)) || null;
 
   return (
     <div

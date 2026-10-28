@@ -407,12 +407,12 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
   );
 
   // Selected layer reference (primary active layer)
-  const selectedLayer = composition.layers.find(
+  const selectedLayer = (composition.layers || []).find(
     (l) => selectedLayerIds.includes(l.id) && l.visible && !l.locked
   );
 
   const evaluatedSelected = selectedLayer
-    ? evaluateLayer(selectedLayer, currentTime, composition.layers)
+    ? evaluateLayer(selectedLayer, currentTime, composition.layers || [])
     : null;
 
   // Finish Pen Path and create VectorLayer
@@ -2026,7 +2026,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
           )}
 
           {/* Regular Vector Layers (rendered back to front) */}
-          {composition.layers.length === 0 ? (
+          {(composition.layers || []).length === 0 ? (
             /* R-27 Empty State: Discreet studio guidelines when composition has no layers yet */
             <g className="pointer-events-none select-none">
               <rect
@@ -2790,7 +2790,7 @@ export const CanvasViewport: React.FC<CanvasViewportProps> = ({
             gizmoW = evaluatedSelected.polygon.radius * 2;
             gizmoH = evaluatedSelected.polygon.radius * 2;
           } else if (selectedLayer.type === 'text' && evaluatedSelected.text && selectedLayer.text) {
-            const charCount = Math.max(1, selectedLayer.text.text.length);
+            const charCount = Math.max(1, (selectedLayer.text.text || '').length);
             gizmoW = evaluatedSelected.text.fontSize * 0.65 * charCount;
             gizmoH = evaluatedSelected.text.fontSize * 1.2;
           } else if (selectedLayer.type === 'image' && evaluatedSelected.image) {

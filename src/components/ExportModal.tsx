@@ -382,7 +382,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
                       className="rounded border border-zinc-700/60 overflow-hidden relative shadow-lg shrink-0 flex items-center justify-center"
                     >
                       <iframe
-                        key={`${loopMode}_${loopCount}_${loopDelay}_${isResponsive}_${previewScale}_${composition.layers.length}_${composition.duration}`}
+                        key={`${loopMode}_${loopCount}_${loopDelay}_${isResponsive}_${previewScale}_${(composition.layers || []).length}_${composition.duration}`}
                         srcDoc={previewHtmlCode}
                         title="Google Ads Live Banner Preview"
                         style={{
